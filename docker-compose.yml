@@ -76,6 +76,7 @@ x-docling: &service-docling
     - GRADIO_ALLOWED_PATHS=/shared
     - GRADIO_TEMP_DIR=/shared/docling-scratch
     - DOCLING_SERVE_ENABLE_REMOTE_SERVICES=true
+    - DOCLING_SERVE_MAX_SYNC_WAIT=120000
   volumes:
     - docling_data:/data
     - ./shared:/shared
