@@ -53,7 +53,7 @@ export function ContractAnalyzer() {
       formData.append('file', files[0]);
       formData.append('criteria', JSON.stringify(criteria));
 
-      const response = await fetch('http://85.215.165.178:5678/webhook/adc2ba30-7608-4273-9ec7-2b4556ff23a6', {
+      const response = await fetch('api/contracts/analyze', {
         method: 'POST',
         body: formData,
       });
