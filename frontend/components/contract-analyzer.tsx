@@ -10,7 +10,13 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AnalysisResult } from '@/lib/types';
 import FileUpload03 from './file-upload-03';
-import Ai02 from './ai-02';
+import { CriteriaForm } from './criteria-form';
+
+interface Criterion {
+  id: string
+  type: 'MUSS' | 'SOLL' | 'KANN' | 'ANALYSE'
+  value: string
+}
 
 interface AnalysisState {
   loading: boolean;
@@ -24,7 +30,7 @@ interface FileWithPath extends File {
 
 export function ContractAnalyzer() {
   const [files, setFiles] = useState<FileWithPath[]>([]);
-  const [criteria, setCriteria] = useState<string>('');
+  const [criteria, setCriteria] = useState<Criterion[]>([]);
   const [state, setState] = useState<AnalysisState>({
     loading: false,
     result: null,
@@ -32,10 +38,10 @@ export function ContractAnalyzer() {
   });
 
   const handleAnalyze = useCallback(async () => {
-    if (files.length === 0 || !criteria.trim()) {
+    if (files.length === 0 || criteria.length === 0) {
       setState((prev) => ({
         ...prev,
-        error: 'Bitte wählen Sie eine Datei und geben Sie Kriterien ein',
+        error: 'Bitte wählen Sie eine Datei und geben Sie mindestens ein Kriterium ein',
       }));
       return;
     }
@@ -45,9 +51,9 @@ export function ContractAnalyzer() {
     try {
       const formData = new FormData();
       formData.append('file', files[0]);
-      formData.append('criteria', criteria);
+      formData.append('criteria', JSON.stringify(criteria));
 
-      const response = await fetch('/api/contracts/analyze', {
+      const response = await fetch('http://85.215.165.178:5678/webhook/adc2ba30-7608-4273-9ec7-2b4556ff23a6', {
         method: 'POST',
         body: formData,
       });
@@ -81,12 +87,12 @@ export function ContractAnalyzer() {
           />
         </div>
 
-        {/* AI Criteria Component */}
+        {/* Criteria Form Component */}
         <div>
           <h2 className="text-lg font-semibold text-foreground mb-4">Schritt 2: Analyse-Kriterien</h2>
           <div className="bg-muted rounded-2xl p-6 border border-border">
-            <Ai02 
-              onCriteriaChange={setCriteria}
+            <CriteriaForm 
+              onChange={setCriteria}
               initialCriteria={criteria}
             />
           </div>
@@ -107,7 +113,7 @@ export function ContractAnalyzer() {
       <div className="flex gap-4">
         <Button
           onClick={handleAnalyze}
-          disabled={state.loading || files.length === 0 || !criteria.trim()}
+          disabled={state.loading || files.length === 0 || criteria.length === 0}
           className="flex-1 py-6 text-base font-semibold disabled:opacity-50 transition-all"
         >
           {state.loading ? (
