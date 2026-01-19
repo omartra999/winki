@@ -88,7 +88,7 @@ jobs:
           script: |
             # Wait for frontend to be healthy
             for i in {1..30}; do
-              if curl -f http://localhost:3001 > /dev/null 2>&1; then
+              if curl -f http://localhost:3000 > /dev/null 2>&1; then
                 echo "✅ Frontend is healthy"
                 exit 0
               fi
