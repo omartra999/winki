@@ -71,12 +71,9 @@ export async function POST(req: NextRequest) {
       const errorText = await n8nResponse.text();
       console.error('[API] n8n error:', n8nResponse.status, errorText);
       
-      // Still return mock for testing if n8n fails
-      console.log('[API] n8n failed, returning mock response');
-      const mockResult = getMockResult();
       return NextResponse.json<AnalysisResponse>(
-        { success: true, data: mockResult },
-        { status: 200 }
+        { success: false, error: `n8n workflow failed: ${n8nResponse.status}` },
+        { status: 500 }
       );
     }
 
@@ -105,41 +102,174 @@ export async function POST(req: NextRequest) {
  * Transform n8n workflow output to frontend format
  */
 function transformN8nResponse(n8nData: any): AnalysisResult {
-  // TODO: Update based on your actual n8n workflow output
-  // For now, return mock while testing
-  return getMockResult();
+  // Handle array response from n8n (it wraps in array)
+  const data = Array.isArray(n8nData) ? n8nData[0] : n8nData;
+  
+  if (!data) {
+    console.error('[API] No data in n8n response');
+    return {
+      summary: 'No data available',
+      criteria: [],
+      deadlines: [],
+      deliverables: [],
+      pricing: [],
+      dsgvo: [],
+      eligibility: [],
+      risks: [],
+      metadata: {
+        processingTime: 0,
+        documentPages: 0,
+        analysisTimestamp: new Date().toISOString(),
+      },
+    };
+  }
+
+  try {
+    // Parse OLLAMA analysis response if it exists
+    const analysis = data.analysis || {};
+    
+    // Build result from n8n data
+    const result: AnalysisResult = {
+      summary: analysis.summary || data.summary || 'Analysis completed',
+      
+      criteria: buildCriteriaFromAnalysis(analysis),
+      
+      deadlines: data.deadlines || [],
+      
+      deliverables: data.deliverables || [],
+      
+      pricing: data.pricing || [],
+      
+      dsgvo: data.dsgvo || [],
+      
+      eligibility: data.eligibility || [],
+      
+      risks: buildRisksFromAnalysis(analysis),
+      
+      metadata: {
+        processingTime: data.processingTime || data.metadata?.processingTime || 0,
+        documentPages: data.documentPages || data.metadata?.documentPages || 0,
+        analysisTimestamp: data.timestamp || data.analysisTimestamp || new Date().toISOString(),
+      },
+    };
+
+    return result;
+  } catch (error) {
+    console.error('[API] Error transforming n8n response:', error);
+    return {
+      summary: 'Error processing analysis',
+      criteria: [],
+      deadlines: [],
+      deliverables: [],
+      pricing: [],
+      dsgvo: [],
+      eligibility: [],
+      risks: [],
+      metadata: {
+        processingTime: 0,
+        documentPages: 0,
+        analysisTimestamp: new Date().toISOString(),
+      },
+    };
+  }
 }
 
 /**
- * Mock response for testing
+ * Build criteria array from n8n analysis
  */
-function getMockResult(): AnalysisResult {
-  return {
-    summary: 'Test response from API proxy.',
-    criteria: [
-      { type: 'MUSS', text: 'Mock MUSS criterion', category: 'Technical', page: 1 },
-      { type: 'SOLL', text: 'Mock SOLL criterion', category: 'Financial', page: 2 },
-    ],
-    deadlines: [
-      { name: 'Abgabefrist', date: '2026-03-15', description: 'Deadline for submission' },
-    ],
-    deliverables: ['Deliverable 1', 'Deliverable 2'],
-    pricing: [
-      { term: 'Payment Terms', description: '30 days net from invoice' },
-    ],
-    dsgvo: [
-      { category: 'AVV', content: 'Data Processing Agreement required' },
-    ],
-    eligibility: [
-      { requirement: 'ISO 27001 certification', type: 'ZERTIFIKAT', mandatory: true },
-    ],
-    risks: [
-      { level: 'HIGH', issue: 'Unbounded liability clause', suggestion: 'Negotiate cap at 12 months of fees' },
-    ],
-    metadata: {
-      processingTime: 45,
-      documentPages: 12,
-      analysisTimestamp: new Date().toISOString(),
-    },
-  };
+function buildCriteriaFromAnalysis(analysis: any): any[] {
+const criteria: Array<{
+    type: 'MUSS' | 'SOLL' | 'KANN' | 'ANALYSE';
+    text: string;
+    category: 'Erfüllt' | 'Fehlt';
+    page: number;
+}> = [];
+
+  // Add MUSS criteria (met)
+  if (analysis.muss_met && Array.isArray(analysis.muss_met)) {
+    analysis.muss_met.forEach((item: string, idx: number) => {
+      criteria.push({
+        type: 'MUSS',
+        text: item,
+        category: 'Erfüllt',
+        page: 1,
+      });
+    });
+  }
+
+  // Add MUSS criteria (missing)
+  if (analysis.muss_missing && Array.isArray(analysis.muss_missing)) {
+    analysis.muss_missing.forEach((item: string, idx: number) => {
+      criteria.push({
+        type: 'MUSS',
+        text: item,
+        category: 'Fehlt',
+        page: 1,
+      });
+    });
+  }
+
+  // Add SOLL criteria (met)
+  if (analysis.soll_met && Array.isArray(analysis.soll_met)) {
+    analysis.soll_met.forEach((item: string) => {
+      criteria.push({
+        type: 'SOLL',
+        text: item,
+        category: 'Erfüllt',
+        page: 1,
+      });
+    });
+  }
+
+  // Add SOLL criteria (missing)
+  if (analysis.soll_missing && Array.isArray(analysis.soll_missing)) {
+    analysis.soll_missing.forEach((item: string) => {
+      criteria.push({
+        type: 'SOLL',
+        text: item,
+        category: 'Fehlt',
+        page: 1,
+      });
+    });
+  }
+
+  // Add KANN criteria (met)
+  if (analysis.kann_met && Array.isArray(analysis.kann_met)) {
+    analysis.kann_met.forEach((item: string) => {
+      criteria.push({
+        type: 'KANN',
+        text: item,
+        category: 'Erfüllt',
+        page: 1,
+      });
+    });
+  }
+
+  return criteria;
 }
+
+/**
+ * Build risks from n8n analysis
+ */
+function buildRisksFromAnalysis(analysis: any): any[] {
+  if (!analysis.risks || !Array.isArray(analysis.risks)) {
+    return [];
+  }
+
+  return analysis.risks.map((risk: string, idx: number) => {
+    // Try to infer risk level from text
+    let level = 'MEDIUM';
+    if (risk.toLowerCase().includes('kritisch') || risk.toLowerCase().includes('hoch')) {
+      level = 'HIGH';
+    } else if (risk.toLowerCase().includes('gering') || risk.toLowerCase().includes('niedrig')) {
+      level = 'LOW';
+    }
+
+    return {
+      level,
+      issue: risk,
+      suggestion: `Überprüfen Sie diesen Punkt und passen Sie die Vertragsklausel an.`,
+    };
+  });
+}
+

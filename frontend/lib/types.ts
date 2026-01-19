@@ -28,7 +28,7 @@ export interface AnalysisResult {
 }
 
 export interface CriteriaItem {
-  type: 'MUSS' | 'SOLL' | 'KANN';
+  type: 'MUSS' | 'SOLL' | 'KANN' | 'ANALYSE';
   text: string;
   category?: string;
   page?: number;
