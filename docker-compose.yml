@@ -201,7 +201,7 @@ services:
     networks: ['demo']
     restart: unless-stopped
     ports:
-      - 3001:3001
+      - 3001:3000
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=http://localhost:3001
