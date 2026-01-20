@@ -43,10 +43,9 @@ export async function POST(req: NextRequest) {
     const buffer = await file.arrayBuffer();
     const base64 = Buffer.from(buffer).toString('base64');
 
-    // Call n8n webhook
+    // Call n8n webhook using internal Docker network hostname
     const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL || 
       'http://n8n:5678/webhook/adc2ba30-7608-4273-9ec7-2b4556ff23a6';
-
 
     console.log('[API] Calling n8n webhook:', n8nWebhookUrl);
 
