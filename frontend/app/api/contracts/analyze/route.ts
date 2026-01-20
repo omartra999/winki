@@ -39,31 +39,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Convert file to base64 for n8n
+    // Convert file to binary for n8n
     const buffer = await file.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString('base64');
 
-    // Call n8n webhook using internal Docker network hostname
+    // Call n8n webhook with FormData (binary file)
     const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL || 
-      'http://n8n:5678/webhook/adc2ba30-7608-4273-9ec7-2b4556ff23a6';
+      'http://n8n:5678/webhook-test/adc2ba30-7608-4273-9ec7-2b4556ff23a6';
 
     console.log('[API] Calling n8n webhook:', n8nWebhookUrl);
+    console.log('[API] Sending file:', file.name, 'Size:', file.size, 'Type:', file.type);
+
+    const n8nFormData = new FormData();
+    n8nFormData.append('file', new Blob([buffer], { type: file.type }), file.name);
+    n8nFormData.append('criteria', JSON.stringify(criteria));
+    n8nFormData.append('request_id', `req_${Date.now()}`);
+    n8nFormData.append('timestamp', new Date().toISOString());
 
     const n8nResponse = await fetch(n8nWebhookUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        files: [file.name],
-        file_base64: base64,
-        file_name: file.name,
-        file_size: file.size,
-        file_type: file.type,
-        criteria: criteria,
-        request_id: `req_${Date.now()}`,
-        timestamp: new Date().toISOString(),
-      }),
+      body: n8nFormData,
     });
 
     if (!n8nResponse.ok) {
