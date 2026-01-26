@@ -75,6 +75,7 @@ jobs:
           script: |
             cd ~/projects/self-hosted-ai-starter-kit
             git pull origin main
+            docker compose --profile cpu down frontend
             docker compose --profile cpu pull frontend 2>/dev/null || true
             docker compose --profile cpu up -d frontend
             docker compose --profile cpu logs frontend --tail 50
