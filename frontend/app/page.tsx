@@ -1,5 +1,5 @@
-import { ContractAnalyzer } from '@/components/contract-analyzer';
 import { Badge } from '@/components/ui/badge';
+import FileUpload03 from '@/components/file-upload-03';
 
 export default function Home() {
   return (
@@ -19,8 +19,8 @@ export default function Home() {
           </div>
         </div>
       </div>
-      <div className="bg-muted py-12">
-        <ContractAnalyzer />
+      <div className="bg-muted py-12 justify-center max-w-xl mx-auto px-6">
+        <FileUpload03 />
       </div>
     </main>
   );

@@ -29,17 +29,17 @@ interface FileWithPath extends File {
 }
 
 interface FileUpload03Props {
-  onFilesChange?: (files: FileWithPath[]) => void;
+  onFilesChange?: (file: FileWithPath | null) => void;
   initialFiles?: FileWithPath[];
 }
 
-export default function FileUpload03({ onFilesChange, initialFiles = [] }: FileUpload03Props) {
-  const [files, setFiles] = React.useState<FileWithPath[]>(initialFiles);
+export default function FileUpload03({ onFilesChange }: FileUpload03Props) {
+  const [file, setFile] = React.useState<FileWithPath>();
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (acceptedFiles) => {
-      const newFiles = acceptedFiles as FileWithPath[];
-      setFiles(newFiles);
-      onFilesChange?.(newFiles);
+      const newFile = acceptedFiles[0] as FileWithPath;
+      setFile(newFile);
+      onFilesChange?.(newFile);
     },
     accept: {
       'application/pdf': ['.pdf'],
@@ -47,7 +47,27 @@ export default function FileUpload03({ onFilesChange, initialFiles = [] }: FileU
     },
   });
 
-  const filesList = files.map((file) => (
+  const handleSubmit = (file: File) => {
+    const webhookUrl = "http://localhost:5678/webhook-test/upload-pdf"; 
+    const formData = new FormData();
+      formData.append("file", file);
+  
+    console.log("Uploading file:", file);
+    fetch(webhookUrl, {
+      method: "POST",
+      body: formData,
+    }).then((response) => {
+      if (response.ok) {
+        console.log("File uploaded successfully");
+      } else {
+        console.error("File upload failed");
+      }
+    }).catch((error) => {
+      console.error("Error uploading file:", error);
+    });
+  }
+
+  const filesList = file ? (
     <li key={file.name} className="relative">
       <Card className="relative p-4">
         <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -57,9 +77,8 @@ export default function FileUpload03({ onFilesChange, initialFiles = [] }: FileU
             size="icon"
             aria-label="Datei entfernen"
             onClick={() => {
-              const newFiles = files.filter((prevFile) => prevFile.name !== file.name);
-              setFiles(newFiles);
-              onFilesChange?.(newFiles);
+              setFile(undefined);
+              onFilesChange?.(null);
             }}
           >
             <Trash className="h-5 w-5" aria-hidden={true} />
@@ -78,7 +97,7 @@ export default function FileUpload03({ onFilesChange, initialFiles = [] }: FileU
         </CardContent>
       </Card>
     </li>
-  ));
+  ) : null;
 
   return (
     <Card className="w-full">
@@ -124,7 +143,7 @@ export default function FileUpload03({ onFilesChange, initialFiles = [] }: FileU
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               PDF oder DOCX • Max. 50MB
             </p>
-            {filesList.length > 0 && (
+            {filesList && (
               <>
                 <h4 className="mt-6 font-medium text-foreground">
                   Ausgewählte Datei
@@ -132,6 +151,12 @@ export default function FileUpload03({ onFilesChange, initialFiles = [] }: FileU
                 <ul role="list" className="mt-4 space-y-4">
                   {filesList}
                 </ul>
+
+                <div className="pt-5 justify-center flex">
+                  <Button
+                    onClick={() => {
+                      handleSubmit(file!);}}>Datei Hochladen</Button>
+                </div>
               </>
             )}
           </div>
