@@ -27,38 +27,34 @@ export async function POST(request: Request) {
     n8nFormData.append('executionId', executionId);
     n8nFormData.append('callbackUrl', callbackUrl);
 
-    const n8nResponse = await fetch('http://n8n:5678/webhook-test/upload-pdf', {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout (Docling can be slow)
+
+    // Send to n8n but don't wait for completion
+    fetch('http://n8n:5678/webhook-test/upload-pdf', {
       method: 'POST',
       body: n8nFormData,
+      signal: controller.signal,
+    }).catch((error) => {
+      console.error('Error sending to n8n:', error);
+      clearTimeout(timeoutId);
     });
 
-    if (!n8nResponse.ok) {
-      storeUpdate(executionId, {
-        title: 'Fehler beim Hochladen',
-        description: 'Die Datei konnte nicht verarbeitet werden',
-        progress: 0,
-        status: 'error',
-      });
-      return Response.json(
-        { error: 'Failed to upload to n8n' },
-        { status: 500 }
-      );
-    }
-
-    // Update status
-    storeUpdate(executionId, {
-      title: 'Datei empfangen',
-      description: 'Starte Dokumentverarbeitung mit Docling...',
-      progress: 20,
-      status: 'processing',
-    });
-
+    // Return immediately so frontend shows loading spinner
     return Response.json({
       success: true,
       executionId: executionId,
     });
   } catch (error) {
     console.error('Error in callback route:', error);
+    
+    // Check if it's an abort error (timeout)
+    if (error instanceof Error && error.name === 'AbortError') {
+      return Response.json(
+        { error: 'n8n request timed out' },
+        { status: 504 }
+      );
+    }
     return Response.json(
       { error: 'Internal server error' },
       { status: 500 }
