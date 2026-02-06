@@ -30,10 +30,11 @@ interface FileWithPath extends File {
 
 interface FileUpload03Props {
   onFilesChange?: (file: FileWithPath | null) => void;
+  onSubmit?: (file: FileWithPath) => void;
   initialFiles?: FileWithPath[];
 }
 
-export default function FileUpload03({ onFilesChange }: FileUpload03Props) {
+export default function FileUpload03({ onFilesChange, onSubmit }: FileUpload03Props) {
   const [file, setFile] = React.useState<FileWithPath>();
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (acceptedFiles) => {
@@ -48,23 +49,9 @@ export default function FileUpload03({ onFilesChange }: FileUpload03Props) {
   });
 
   const handleSubmit = (file: File) => {
-    const webhookUrl = "http://localhost:5678/webhook-test/upload-pdf"; 
-    const formData = new FormData();
-      formData.append("file", file);
-  
-    console.log("Uploading file:", file);
-    fetch(webhookUrl, {
-      method: "POST",
-      body: formData,
-    }).then((response) => {
-      if (response.ok) {
-        console.log("File uploaded successfully");
-      } else {
-        console.error("File upload failed");
-      }
-    }).catch((error) => {
-      console.error("Error uploading file:", error);
-    });
+    if (onSubmit) {
+      onSubmit(file as FileWithPath);
+    }
   }
 
   const filesList = file ? (
