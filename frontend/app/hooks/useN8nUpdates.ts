@@ -8,6 +8,7 @@ export function useN8nUpdates() {
     });
 
     const [isComplete, setIsComplete] = useState(false);
+    const [results, setResults] = useState<any[]>([]);
     const eventSourceRef = useRef<EventSource | null>(null);
 
     const startListening = (executionId: string) => {
@@ -27,7 +28,11 @@ export function useN8nUpdates() {
                 progresss: data.progress,
             });
 
-            if (data.status === "completed" || data.status === "error") {
+            if (data.results) {
+                setResults(data.results);
+            }
+
+            if (data.status === "completed" || data.status === "COMPLETED" || data.status === "error") {
                 setIsComplete(true);
                 eventSource.close();
                 eventSourceRef.current = null;
@@ -41,5 +46,5 @@ export function useN8nUpdates() {
         };
     }
 
-    return { update, isComplete, startListening };
+    return { update, isComplete, results, startListening };
 }

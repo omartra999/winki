@@ -1,6 +1,7 @@
 'use client';
 
 import FileUpload03 from '@/components/file-upload-03';
+import ResultsDisplay from '@/components/results-display';
 import { SpinnerEmpty } from '@/components/spinnerEmpty';
 import { useN8nUpdates } from '@/app/hooks/useN8nUpdates';
 import { useState } from 'react';
@@ -12,7 +13,7 @@ interface FileWithPath extends File {
 export default function Home() {
   const [loading, setLoading] = useState(false);
   const [executionId, setExecutionId] = useState<string | null>(null);
-  const { update, isComplete, startListening } = useN8nUpdates();
+  const { update, isComplete, results, startListening } = useN8nUpdates();
 
   const handleFileSubmit = async (file: FileWithPath) => {
     if (!file) return;
@@ -46,6 +47,25 @@ export default function Home() {
     setLoading(false);
     setExecutionId(null);
   };
+
+  if (isComplete && results.length > 0) {
+    return (
+      <main className="min-h-screen bg-muted py-12">
+        <div className="max-w-2xl mx-auto px-6">
+          <button
+            onClick={() => {
+              setLoading(false);
+              setExecutionId(null);
+            }}
+            className="mb-6 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition"
+          >
+            ← Upload Another File
+          </button>
+          <ResultsDisplay results={results} />
+        </div>
+      </main>
+    );
+  }
 
   if (loading && executionId) {
     return (
