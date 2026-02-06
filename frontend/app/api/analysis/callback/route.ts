@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     n8nFormData.append('executionId', executionId);
     n8nFormData.append('callbackUrl', callbackUrl);
 
-    const n8nResponse = await fetch('http://localhost:5678/webhook-test/upload-pdf', {
+    const n8nResponse = await fetch('http://n8n:5678/webhook-test/upload-pdf', {
       method: 'POST',
       body: n8nFormData,
     });
