@@ -14,7 +14,7 @@ RUN npm ci --legacy-peer-deps 2>/dev/null || npm install
 COPY . .
 
 # Build Next.js app
-RUN npm run build || echo "Build completed"
+RUN npm run build
 
 # Production stage
 FROM node:20-alpine
