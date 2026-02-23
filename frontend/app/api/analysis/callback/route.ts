@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout (Docling can be slow)
 
     // Send to n8n but don't wait for completion
-    fetch('http://n8n:5678/webhook-test/upload-pdf', {
+    fetch('http://localhost:5678/webhook/upload-pdf', {
       method: 'POST',
       body: n8nFormData,
       signal: controller.signal,

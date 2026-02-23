@@ -13,7 +13,7 @@ interface FileWithPath extends File {
 export default function Home() {
   const [loading, setLoading] = useState(false);
   const [executionId, setExecutionId] = useState<string | null>(null);
-  const { update, isComplete, results, startListening } = useN8nUpdates();
+  const { update, isComplete, results, startListening, stopListening } = useN8nUpdates();
 
   const handleFileSubmit = async (file: FileWithPath) => {
     if (!file) return;
@@ -43,9 +43,37 @@ export default function Home() {
     }
   };
 
-  const handleCancel = () => {
-    setLoading(false);
-    setExecutionId(null);
+  const handleCancel = async () => {
+    console.log('[handleCancel] Button clicked');
+    console.log('[handleCancel] executionId:', executionId);
+
+    try {
+      // Call cancel API route
+      console.log('[handleCancel] Sending cancel request...');
+      const response = await fetch('/api/executions/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ executionId }),
+      });
+      
+      console.log('[handleCancel] Response status:', response.status);
+      const data = await response.json();
+      console.log('[handleCancel] Response data:', data);
+
+      if (!response.ok) {
+        console.error('Cancel request failed:', data.error);
+      } else {
+        console.log('Execution cancelled successfully');
+      }
+    } catch (error) {
+      console.error('Error calling cancel API:', error);
+    } finally {
+      // Stop listening and reset UI state
+      console.log('[handleCancel] Resetting state...');
+      setLoading(false);
+      setExecutionId(null);
+      stopListening();
+    }
   };
 
   if (isComplete && results.length > 0) {

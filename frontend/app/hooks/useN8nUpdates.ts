@@ -44,7 +44,14 @@ export function useN8nUpdates() {
             eventSource.close();
             eventSourceRef.current = null;
         };
-    }
+    };
 
-    return { update, isComplete, results, startListening };
+    const stopListening = () => {
+        if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+            eventSourceRef.current = null;
+        }
+    };
+
+    return { update, isComplete, results, startListening, stopListening };
 }
